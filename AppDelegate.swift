@@ -1,6 +1,9 @@
 import UIKit
 import Flutter
 
+// Send iOS token to flutter
+var myToken:String?
+
 @available(iOS 10.0, *)
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
@@ -8,6 +11,21 @@ import Flutter
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    // Send iOS Token to Flutter
+    let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
+    let tokenChannel = FlutterMethodChannel(name: "example.flutter.apns/token", binaryMessenger: controller as! FlutterViewController as! FlutterBinaryMessenger)
+    
+    // Send iOS Token to Flutter
+    tokenChannel.setMethodCallHandler({
+        (call: FlutterMethodCall, result: FlutterResult) -> Void in
+        // token 처리
+        guard call.method == "getAPNsToken" else {
+            result(FlutterMethodNotImplemented)
+            return
+        }
+        self.receiveAPNsToken(result: result)
+    })
+    
     GeneratedPluginRegistrant.register(with: self)
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
@@ -30,16 +48,16 @@ import Flutter
   override func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
 
             // deep link처리 시 아래 url값 가지고 처리
-    let userInfo = response.notification.request.content.userInfo
-            print("url = \(userInfo)")
-    
-    if let aps = userInfo["aps"] as? NSDictionary {
-        if (aps["url"] as? NSDictionary) != nil {}
-        else if (aps["url"] as? NSString) != nil {
-            UIApplication.shared.open(URL(string : aps["url"] as! String)!, options: [:], completionHandler: { (status) in
-                })
+        let userInfo = response.notification.request.content.userInfo
+                print("url = \(userInfo)")
+        
+        if let aps = userInfo["aps"] as? NSDictionary {
+            if (aps["url"] as? NSDictionary) != nil {}
+            else if (aps["url"] as? NSString) != nil {
+                UIApplication.shared.open(URL(string : aps["url"] as! String)!, options: [:], completionHandler: { (status) in
+                    })
+            }
         }
-    }
 
             // if url.containts("receipt")...
     }
@@ -50,19 +68,26 @@ import Flutter
                     deviceToken: Data) {
     let tokenString = deviceToken.reduce("", {$0 + String(format: "%02X", $1)})
         print("token \(tokenString.lowercased())")
+    // Send iOS Token to Flutter
+    if tokenString != nil {
+        myToken = tokenString
+    }
     
         // check the device token to server send
-        let tokenRegistration = UserDefaults.standard.value(forKey: "TokenRegistState")
-        if tokenRegistration == nil {
-            guard let serverUrl = URL(string: "API") else {
+//        let tokenRegistration = UserDefaults.standard.value(forKey: "TokenRegistState")
+//        if tokenRegistration == nil {
+            guard let serverUrl = URL(string: "YOUR IP") else {
                 return      // 데이터를 보낼 서버 url
             }
             
             var request = URLRequest(url: serverUrl)
             request.httpMethod = "POST"     // POST 전송
             
+    let bodyData = ["BODY DATA"] as [String: Any]
+            guard let jsonData = try? JSONSerialization.data(withJSONObject: bodyData, options: []) else { return }
+            
             do {    // request body에 전송할 데이터
-                request.httpBody = tokenString.lowercased().data(using: String.Encoding.utf8)
+                request.httpBody = jsonData
             } catch {
                 print(error.localizedDescription)
             }
@@ -77,16 +102,30 @@ import Flutter
                     NSLog("An error has occured: \(e.localizedDescription)")
                     return
                 }
+
+                guard let data = String(bytes: jsonData, encoding: .utf8) else {
+                    return
+                }
+
                 print("전송완료")
             }).resume()
-            
-            UserDefaults.standard.set("tokenSendSuccess", forKey: "TokenRegistState")
-        }
+
+//            UserDefaults.standard.set("tokenSendSuccess", forKey: "TokenRegistState")
+//        }
     }
   // APNs Get Token
   override func application(_ application: UIApplication,
                 didFailToRegisterForRemoteNotificationsWithError
                     error: Error) {
        // Try again later.
+    }
+    
+    // Send iOS token to Flutter
+    private func receiveAPNsToken(result: FlutterResult) {
+        if myToken == nil {
+            result(FlutterError(code: "UNAVAILBLE", message: "There is no token", details: nil))
+        } else {
+            result(String("\(myToken)"))
+        }
     }
 }
