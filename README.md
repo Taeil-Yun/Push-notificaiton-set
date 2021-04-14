@@ -1,2 +1,4 @@
-# iOS-push-notificaiton-set
-iOS Push Notification settings
+# Push-notificaiton-set
+Push Notification settings
+ - Android : FCM
+ - iOS : APNs
