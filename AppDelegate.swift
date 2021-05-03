@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
 import UserNotifications
+import AppTrackingTransparency
 
 // Send iOS token to flutter
 var myToken:String?
@@ -19,19 +20,19 @@ var myToken:String?
         }
     }
     registerForPushNotifications()
-    
+
     GeneratedPluginRegistrant.register(with: self)
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
     }
-    
+
     // APNs Get Token
     UIApplication.shared.registerForRemoteNotifications()
-    
+
     // Send iOS Token to Flutter
     let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-    let tokenChannel = FlutterMethodChannel(name: "dholic.flutter.apns/token", binaryMessenger: controller as! FlutterViewController as! FlutterBinaryMessenger)
-    
+    let tokenChannel = FlutterMethodChannel(name: "example.flutter.apns/token", binaryMessenger: controller as! FlutterViewController as! FlutterBinaryMessenger)
+
     // Send iOS Token to Flutter
     tokenChannel.setMethodCallHandler({
         (call: FlutterMethodCall, result: FlutterResult) -> Void in
@@ -42,10 +43,32 @@ var myToken:String?
         }
         self.receiveAPNsToken(result: result)
     })
+    
+    // 앱 추적 투명성
+    if #available(iOS 14, *) {
+        func requestPermission() {
+            ATTrackingManager.requestTrackingAuthorization {
+                status in
+                switch status {
+                case .authorized:
+                    print("we got permission")
+                case .notDetermined:
+                    print("the user has not yet received an authorization request")
+                case .restricted:
+                    print("the permission we get are restricted")
+                case .denied:
+                    print("we didn't get the permission")
+                @unknown default:
+                    print("looks like we didn't get permission")
+                }
+            }
+        }
+        requestPermission()
+    }
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
-    
+
   // 앱이 foreground상태 일 때, 알림이 온 경우 처리
   override func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
 
@@ -59,7 +82,7 @@ var myToken:String?
             // deep link처리 시 아래 url값 가지고 처리
         let userInfo = response.notification.request.content.userInfo
                 print("url = \(userInfo)")
-        
+
         if let aps = userInfo["aps"] as? NSDictionary {
             if (aps["url"] as? NSDictionary) != nil {}
             else if (aps["url"] as? NSString) != nil {
@@ -70,7 +93,7 @@ var myToken:String?
 
             // if url.containts("receipt")...
     }
-    
+
   // APNs Get Token
   override func application(_ application: UIApplication,
                 didRegisterForRemoteNotificationsWithDeviceToken
@@ -81,14 +104,14 @@ var myToken:String?
     if tokenString != nil {
         myToken = tokenString
     }
-    
+  }
   // APNs Get Token
   override func application(_ application: UIApplication,
                 didFailToRegisterForRemoteNotificationsWithError
                     error: Error) {
        // Try again later.
     }
-    
+
     // Send iOS token to Flutter
     private func receiveAPNsToken(result: FlutterResult) {
         if myToken == nil {
