@@ -6,6 +6,8 @@
 //
 
 import UserNotifications
+// firebase message 사용할 때 이미지 
+import FirebaseMessaging
 
 class NotificationService: UNNotificationServiceExtension {
 
@@ -15,6 +17,12 @@ class NotificationService: UNNotificationServiceExtension {
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         self.contentHandler = contentHandler
         bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
+        
+//         // firebase message image 처리
+//         guard let bestAttemptContent = bestAttemptContent else { return }
+//         FIRMessagingExtensionHelper().populateNotificationContent(
+//           bestAttemptContent,
+//           withContentHandler: contentHandler)
         
         if let bestAttemptContent = bestAttemptContent {
             // Modify the notification content here...
