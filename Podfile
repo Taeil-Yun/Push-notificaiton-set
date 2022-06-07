@@ -34,7 +34,8 @@ target 'Runner' do
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
-target 'imageExtension' do
+# firebase fcm ios 이미지처리를 위해 설정
+target '{NotificationServiceExtension 추가했을 때 설정한 이름 값}' do
   use_frameworks!
   pod 'Firebase/Messaging'
 end
